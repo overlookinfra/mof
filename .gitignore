@@ -3,3 +3,6 @@ pkg
 lib/mof/parser.output
 doc/
 .yardoc
+.bundle
+*.lock
+Gemfile.local

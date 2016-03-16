@@ -9,19 +9,19 @@ module MOF
 module Helper
 
   require 'pathname'
-  
+
   def lineno
     @lineno
   end
-  
+
   def name
     @name
   end
-  
+
   def style
     @style
   end
-  
+
   #
   # open file for parsing
   #
@@ -67,32 +67,48 @@ module Helper
 	raise "Cannot open #{name}"
       end
     end
-    @fstack << [ @file, @name, @lineno, @iconv, $/, @result ] if @file  
+    @fstack << [ @file, @name, @lineno, @iconv, $/, @result ] if @file
     @file = file
     @name = name
     @lineno = 1
+    @iconv = nil
+    $/ = "\n"
+
     @result = MOF::Result.new
     # read the byte order mark to check for utf-16 windows files
     bom = @file.read(2)
-    if bom == "\376\377"
+
+    # check for 2-byte BOMs
+    if bom.bytes.to_a == [0xFE, 0xFF]
       @iconv = "UTF-16BE"
       $/ = "\0\r\0\n"
-    elsif bom == "\377\376"
+    elsif bom.bytes.to_a == [0xFF, 0xFE]
       @iconv = "UTF-16LE"
       $/ = "\r\0\n\0"
-    elsif ! has_valid_utf8(@name)
+    end
+
+    # check for 3-byte BOMs if no 2-byte BOM
+    if ! @iconv
+      bom += @file.read(1)
+      if bom.bytes.to_a == [0xEF, 0xBB, 0xBF]
+        @iconv = "UTF-8"
+        $/ = "\r\0\n\0"
+      end
+    end
+
+    # check for bad UTF-8 if no BOM detected
+    if ! @iconv && ! has_valid_utf8(@name)
       $stderr.puts "#{name} contains invalid UTF-8, treating as ISO-8859-1"
       @iconv = "ISO-8859-1"
       @file.rewind
-      $/ = "\n"
+    end
+
+    if @iconv
+      @style = :wmi
     else
       @file.rewind
-      @iconv = nil
-      $/ = "\n"
     end
-    @style = :wmi if @iconv
     #  $stderr.puts "$/(#{$/.split('').inspect})"
-
   end
 
   def has_valid_utf8 name
@@ -110,11 +126,11 @@ module Helper
 
     valid
   end
-  
+
   #----------------------------------------------------------
   # Error classes
   #
-  
+
   # to be used to flag @style issues
   class Error < ::SyntaxError
     attr_reader :name, :lineno, :line, :msg
@@ -125,13 +141,13 @@ module Helper
       "#{@name}:#{@lineno}: #{line}\n#{msg}"
     end
   end
-  
+
   class ScannerError < Error
     def initialize name, lineno, line, msg
       super name,lineno,line,"Unrecognized '#{msg}'"
     end
   end
-  
+
   class ParserError < Error
     attr_reader :line, :token, :token_value, :stack
     def initialize name, lineno, line, token, token_value, stack
@@ -163,10 +179,10 @@ module Helper
       ret
     end
   end
-  
+
   class StyleError < Error
   end
-  
+
   public
   #
   # error_handler
@@ -187,6 +203,6 @@ module Helper
       $stderr.puts $@
     end
   end
-  
+
 end # module Helper
 end # module MOF

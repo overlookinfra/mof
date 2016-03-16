@@ -80,15 +80,21 @@ module Helper
     elsif bom == "\377\376"
       @iconv = "UTF-16LE"
       $/ = "\r\0\n\0"
-    elsif ! has_valid_utf8(@name)
-      $stderr.puts "#{name} contains invalid UTF-8, treating as ISO-8859-1"
-      @iconv = "ISO-8859-1"
-      @file.rewind
-      $/ = "\n"
     else
-      @file.rewind
-      @iconv = nil
-      $/ = "\n"
+      bom += @file.read(1)
+      if bom.bytes == [0xEF, 0xBB, 0xBF]
+        @iconv = "UTF-8"
+        $/ = "\r\0\n\0"
+      elsif ! has_valid_utf8(@name)
+        $stderr.puts "#{name} contains invalid UTF-8, treating as ISO-8859-1"
+        @iconv = "ISO-8859-1"
+        @file.rewind
+        $/ = "\n"
+      else
+        @file.rewind
+        @iconv = nil
+        $/ = "\n"
+      end
     end
     @style = :wmi if @iconv
     #  $stderr.puts "$/(#{$/.split('').inspect})"

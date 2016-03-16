@@ -71,34 +71,44 @@ module Helper
     @file = file
     @name = name
     @lineno = 1
+    @iconv = nil
+    $/ = "\n"
+
     @result = MOF::Result.new
     # read the byte order mark to check for utf-16 windows files
     bom = @file.read(2)
-    if bom.bytes == [0xFE, 0xFF]
+
+    # check for 2-byte BOMs
+    if bom.bytes.to_a == [0xFE, 0xFF]
       @iconv = "UTF-16BE"
       $/ = "\0\r\0\n"
-    elsif bom.bytes == [0xFF, 0xFE]
+    elsif bom.bytes.to_a == [0xFF, 0xFE]
       @iconv = "UTF-16LE"
       $/ = "\r\0\n\0"
-    else
+    end
+
+    # check for 3-byte BOMs if no 2-byte BOM
+    if ! @iconv
       bom += @file.read(1)
-      if bom.bytes == [0xEF, 0xBB, 0xBF]
+      if bom.bytes.to_a == [0xEF, 0xBB, 0xBF]
         @iconv = "UTF-8"
         $/ = "\r\0\n\0"
-      elsif ! has_valid_utf8(@name)
-        $stderr.puts "#{name} contains invalid UTF-8, treating as ISO-8859-1"
-        @iconv = "ISO-8859-1"
-        @file.rewind
-        $/ = "\n"
-      else
-        @file.rewind
-        @iconv = nil
-        $/ = "\n"
       end
     end
-    @style = :wmi if @iconv
-    #  $stderr.puts "$/(#{$/.split('').inspect})"
 
+    # check for bad UTF-8 if no BOM detected
+    if ! @iconv && ! has_valid_utf8(@name)
+      $stderr.puts "#{name} contains invalid UTF-8, treating as ISO-8859-1"
+      @iconv = "ISO-8859-1"
+      @file.rewind
+    end
+
+    if @iconv
+      @style = :wmi
+    else
+      @file.rewind
+    end
+    #  $stderr.puts "$/(#{$/.split('').inspect})"
   end
 
   def has_valid_utf8 name

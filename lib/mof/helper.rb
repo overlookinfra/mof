@@ -74,10 +74,10 @@ module Helper
     @result = MOF::Result.new
     # read the byte order mark to check for utf-16 windows files
     bom = @file.read(2)
-    if bom == "\376\377"
+    if bom.bytes == [0xFE, 0xFF]
       @iconv = "UTF-16BE"
       $/ = "\0\r\0\n"
-    elsif bom == "\377\376"
+    elsif bom.bytes == [0xFF, 0xFE]
       @iconv = "UTF-16LE"
       $/ = "\r\0\n\0"
     else

@@ -9,19 +9,19 @@ module MOF
 module Helper
 
   require 'pathname'
-  
+
   def lineno
     @lineno
   end
-  
+
   def name
     @name
   end
-  
+
   def style
     @style
   end
-  
+
   #
   # open file for parsing
   #
@@ -67,7 +67,7 @@ module Helper
 	raise "Cannot open #{name}"
       end
     end
-    @fstack << [ @file, @name, @lineno, @iconv, $/, @result ] if @file  
+    @fstack << [ @file, @name, @lineno, @iconv, $/, @result ] if @file
     @file = file
     @name = name
     @lineno = 1
@@ -116,11 +116,11 @@ module Helper
 
     valid
   end
-  
+
   #----------------------------------------------------------
   # Error classes
   #
-  
+
   # to be used to flag @style issues
   class Error < ::SyntaxError
     attr_reader :name, :lineno, :line, :msg
@@ -131,13 +131,13 @@ module Helper
       "#{@name}:#{@lineno}: #{line}\n#{msg}"
     end
   end
-  
+
   class ScannerError < Error
     def initialize name, lineno, line, msg
       super name,lineno,line,"Unrecognized '#{msg}'"
     end
   end
-  
+
   class ParserError < Error
     attr_reader :line, :token, :token_value, :stack
     def initialize name, lineno, line, token, token_value, stack
@@ -169,10 +169,10 @@ module Helper
       ret
     end
   end
-  
+
   class StyleError < Error
   end
-  
+
   public
   #
   # error_handler
@@ -193,6 +193,6 @@ module Helper
       $stderr.puts $@
     end
   end
-  
+
 end # module Helper
 end # module MOF

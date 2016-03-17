@@ -82,9 +82,11 @@ module Helper
     if bom.bytes.to_a == [0xFE, 0xFF]
       @iconv = "UTF-16BE"
       $/ = "\0\r\0\n"
+      $stderr.puts "WARNING: MOF file #{@name} is expected to have CRLF line endings"
     elsif bom.bytes.to_a == [0xFF, 0xFE]
       @iconv = "UTF-16LE"
       $/ = "\r\0\n\0"
+      $stderr.puts "WARNING: MOF file #{@name} is expected to have CRLF line endings"
     end
 
     # check for 3-byte BOMs if no 2-byte BOM
@@ -92,7 +94,6 @@ module Helper
       bom += @file.read(1)
       if bom.bytes.to_a == [0xEF, 0xBB, 0xBF]
         @iconv = "UTF-8"
-        $/ = "\r\0\n\0"
       end
     end
 
